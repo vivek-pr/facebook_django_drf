@@ -280,6 +280,21 @@ class Follow(models.Model):
             raise ValidationError("Users cannot follow themselves.")
         super(Follow, self).save(*args, **kwargs)
 
+class PostManager(models.Manager):
+
+    def wall_post(self, user):
+        qs = Friend.objects.select_related('from_user', 'to_user').filter(to_user=user).all()
+        friends = [u.from_user for u in qs]
+        friends.append(user)
+        return FacebookPost.objects.filter(owner__in=friends)
+
+    def profile_post(self, user):
+        return FacebookPost.objects.filter(owner=user)
+
+    def post_detail(self, post):
+        return PostAction.objects.select_related('user', 'post').filter(post=post)
+
+    
 
 class FacebookPost(models.Model):
     # Contains in data an array of objects, each with the name and Facebook id of the user
@@ -305,29 +320,13 @@ class FacebookPost(models.Model):
     place_long = models.CharField(max_length=10, null=True, help_text='Location associated with a Post, if any lattitude')
 
     place_lat = models.CharField(max_length=10, null=True, help_text='Location associated with a Post, if any longitude')
-
+    objects = PostManager()
     class Meta:
         verbose_name = 'Facebook post'
         verbose_name_plural = 'Facebook posts'
 
     def __unicode__(self):
         return self.message or self.story
-
-
-class PostManager(models.Manager):
-
-    def wall_post(self, user):
-        qs = Friend.objects.select_related('from_user', 'to_user').filter(to_user=user).all()
-        friends = [u.from_user for u in qs]
-        friends.append(user)
-        return FacebookPost.objects.filter(owner__in=friends)
-
-    def profile_post(self, user):
-        return FacebookPost.objects.filter(owner=user)
-
-    def post_detail(self, post):
-        return PostAction.objects.select_related('user', 'post').filter(post=post)
-
 
 
 class PostAction(models.Model):

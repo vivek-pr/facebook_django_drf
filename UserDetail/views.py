@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 
 from UserDetail.models import UserProfile,\
     FriendshipRequest,\
-    FriendshipManager,\
-    FollowingManager, PostManager
+    PostManager,\
+    Friend,\
+    Follow, FacebookPost
 from UserDetail.serializers import UserDetailSerializer,\
     FriendshipRequestSerializer,\
     PostActionSerializer,\
@@ -95,7 +96,7 @@ class ManageFriends(APIView):
         serializer = FriendshipRequestSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                FriendshipManager().add_friend(serializer['from_user'], serializer['to_user'])
+                Friend.objects.add_friend(serializer['from_user'], serializer['to_user'])
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -106,7 +107,7 @@ class ManageFriends(APIView):
         serializer = FriendshipRequestSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                FriendshipManager().remove_friend(serializer['from_user'], serializer['to_user'])
+                Friend.objects.remove_friend(serializer['from_user'], serializer['to_user'])
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -124,7 +125,7 @@ class ManageFollowRequest(APIView):
         serializer = FriendshipRequestSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                FollowingManager().add_follower(serializer['follower'], serializer['followee'])
+                Follow.objects.add_follower(serializer['follower'], serializer['followee'])
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -135,7 +136,7 @@ class ManageFollowRequest(APIView):
         serializer = FriendshipRequestSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                FollowingManager().remove_follower(serializer['follower'], serializer['followee'])
+                Follow.objects.remove_follower(serializer['follower'], serializer['followee'])
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -150,12 +151,12 @@ class PostList(APIView):
 
     def get_object(self, pk):
         try:
-            return PostManager.objects.get(pk=pk)
-        except PostManager.DoesNotExist:
+            return FacebookPost.objects.get(pk=pk)
+        except FacebookPost.DoesNotExist:
             raise Http404
 
     def get(self, request, pk, format=None):
-        posts = PostManager().profile_post(request.user)
+        posts = FacebookPost.objects.profile_post(request.user)
         serializer = FacebookPostSerializer(posts, many=True)
         return Response(serializer.data)
 
@@ -186,7 +187,7 @@ class PostAction(APIView):
     """
 
     def get(self, request, pk, format=None):
-        snippets = PostManager().post_detail(pk)
+        snippets = FacebookPost.objects.post_detail(pk)
         serializer = PostActionSerializer(snippets, many=True)
         return Response(serializer.data)
 
@@ -201,62 +202,62 @@ class PostAction(APIView):
 
 @api_view(['GET'])
 def friends_list(request):
-    total_friends = FriendshipManager().friends(request.user)
+    total_friends = Friend.objects.friends(request.user)
     serializer = FriendSerializer(total_friends, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def friendship_request_sent(request):
-    friend_request_sent = FriendshipManager().sent_requests(request.user)
+    friend_request_sent = Friend.objects.sent_requests(request.user)
     serializer = FriendshipRequestSerializer(friend_request_sent, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def friendship_request_receive(request):
-    friend_request_receive = FriendshipManager().requests(request.user)
+    friend_request_receive = Friend.objects.requests(request.user)
     serializer = FriendshipRequestSerializer(friend_request_receive, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def friendship_request_viewed(request):
-    friend_request_viewed = FriendshipManager().read_requests(request.user)
+    friend_request_viewed = Friend.objects.read_requests(request.user)
     serializer = FriendshipRequestSerializer(friend_request_viewed, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def friendship_request_rejected(request):
-    friend_request_rejected = FriendshipManager().rejected_requests(request.user)
+    friend_request_rejected = Friend.objects.rejected_requests(request.user)
     serializer = FriendshipRequestSerializer(friend_request_rejected, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def friendship_request_unrejected(request):
-    friend_request_unrejected = FriendshipManager().unrejected_requests(request.user)
+    friend_request_unrejected = Friend.objects.unrejected_requests(request.user)
     serializer = FriendshipRequestSerializer(friend_request_unrejected, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def friendship_request_unread(request):
-    friend_request_unread = FriendshipManager().unread_requests(request.user)
+    friend_request_unread = Friend.objects.unread_requests(request.user)
     serializer = FriendshipRequestSerializer(friend_request_unread, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def following(request):
-    follow_list = FollowingManager().following(request.user)
+    follow_list = Follow.objects.following(request.user)
     serializer = FollowSerializer(follow_list, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def followers(request):
-    follow_list = FollowingManager().followers(request.user)
+    follow_list = Follow.objects.followers(request.user)
     serializer = FollowSerializer(follow_list, many=True)
     return Response(serializer.data)
